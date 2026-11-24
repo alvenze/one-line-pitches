@@ -19,16 +19,48 @@ ENTRY = (
 MAX_CHARS = 240
 
 
+def gate_problems(text: str) -> list[str]:
+    """The bounty gate: UTF-8 text of 1-240 chars, not only whitespace, one line."""
+    problems = []
+    if not 1 <= len(text) <= MAX_CHARS:
+        problems.append(f"entry is {len(text)} chars, outside 1-{MAX_CHARS}")
+    if not text.strip():
+        problems.append("entry is only whitespace")
+    if "\n" in text or "\r" in text:
+        problems.append("entry must be a single line")
+    return problems
+
+
+def check() -> int:
+    problems = gate_problems(ENTRY)
+    if problems:
+        for problem in problems:
+            print(f"gate: {problem}", file=sys.stderr)
+        return 1
+    print(f"gate ok: {len(ENTRY)} chars, one line, not only whitespace")
+    return 0
+
+
 def main() -> int:
-    output_dir = sys.argv[1] if len(sys.argv) > 1 else "/output"
-    if not 1 <= len(ENTRY) <= MAX_CHARS:
-        print(f"entry is {len(ENTRY)} chars, outside 1-{MAX_CHARS}", file=sys.stderr)
+    args = sys.argv[1:]
+    if args and args[0] == "--check":
+        return check()
+    output_dir = args[0] if args else "/output"
+    problems = gate_problems(ENTRY)
+    if problems:
+        for problem in problems:
+            print(f"gate: {problem}", file=sys.stderr)
         return 1
     os.makedirs(output_dir, exist_ok=True)
     path = os.path.join(output_dir, "entry.txt")
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(ENTRY)
-    print(f"wrote {path} ({len(ENTRY)} chars)")
+    with open(path, "rb") as fh:
+        written = fh.read()
+    if written != ENTRY.encode("utf-8"):
+        print("written file differs from the entry byte for byte", file=sys.stderr)
+        return 1
+    print(f"wrote {path} ({len(ENTRY)} chars, verified byte for byte)")
     return 0
 
 
